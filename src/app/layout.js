@@ -1,5 +1,6 @@
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { BottomNav } from "@/components/BottomNav";
+import { AuthGuard } from "@/components/AuthGuard"; // Importamos el guardia
 import "./globals.css";
 import { Inter } from "next/font/google";
 
@@ -21,9 +22,11 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          {/* La barra de navegación se renderiza aquí para estar en todas las páginas */}
-          <BottomNav />
+          {/* Envolvemos la App con el Guardia de Seguridad */}
+          <AuthGuard>
+            {children}
+            <BottomNav />
+          </AuthGuard>
         </ThemeProvider>
       </body>
     </html>
