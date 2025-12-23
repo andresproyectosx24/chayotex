@@ -1,11 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react"; // 1. Importamos Suspense
 import { useSearchParams, useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { documentId, collection, query, where, getDocs } from "firebase/firestore";
 import { Loader2, Printer, ArrowLeft, Truck, TrendingDown } from "lucide-react";
 
-// Utilidad número a letras (reutilizada)
+// --- UTILIDAD (Igual que antes) ---
 const numeroALetras = (amount) => {
   if (!amount) return "CERO PESOS 00/100 M.N.";
   const unidades = ["", "UN ", "DOS ", "TRES ", "CUATRO ", "CINCO ", "SEIS ", "SIETE ", "OCHO ", "NUEVE "];
@@ -46,7 +46,8 @@ const numeroALetras = (amount) => {
   return `${letras}PESOS ${centavos.toString().padStart(2, '0')}/100 M.N.`.trim();
 };
 
-export default function ImprimirLiquidacionesPage() {
+// 2. CAMBIAMOS EL NOMBRE DEL COMPONENTE PRINCIPAL A 'Content'
+function ImprimirContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [items, setItems] = useState([]);
@@ -79,7 +80,6 @@ export default function ImprimirLiquidacionesPage() {
 
   const handlePrint = () => window.print();
 
-  // Duplicar para Original y Copia
   const itemsImpresion = items.flatMap((item) => [
     { ...item, _key: `${item.id}_orig`, _tipo: "ORIGINAL" },
     { ...item, _key: `${item.id}_copia`, _tipo: "COPIA" }
@@ -100,10 +100,8 @@ export default function ImprimirLiquidacionesPage() {
         </button>
       </div>
 
-      {/* LIENZO DE IMPRESIÓN */}
+      {/* LIENZO */}
       <div className="max-w-[21.59cm] mx-auto bg-white shadow-xl print:shadow-none print:max-w-none">
-        
-        {/* GRID ADAPTADO PARA LIQUIDACIONES */}
         <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4 print:gap-x-8 print:gap-y-8 p-4 print:p-0">
           {itemsImpresion.map((liq) => {
              const day = liq.fechaDate.getDate().toString().padStart(2, '0');
@@ -115,7 +113,7 @@ export default function ImprimirLiquidacionesPage() {
                 key={liq._key} 
                 className="relative p-2 border border-gray-300 print:border-black h-[8cm] flex flex-col justify-between rounded-md" 
               >
-                {/* --- CONTENIDO --- */}
+                {/* CONTENIDO */}
                 <div>
                   {/* Header */}
                   <div className="flex justify-between items-center mb-1 pb-1 border-b border-black">
@@ -139,10 +137,8 @@ export default function ImprimirLiquidacionesPage() {
                     <span className="font-bold text-[10px] uppercase">{liq.proveedor_nombre}</span>
                   </div>
 
-                  {/* GRID INTERNO: ENTRADAS vs GASTOS */}
+                  {/* GRID INTERNO */}
                   <div className="flex gap-2 h-[3.5cm] overflow-hidden">
-                    
-                    {/* Tabla Izquierda: Entradas (Más ancha) */}
                     <div className="flex-1 border-r border-gray-200 print:border-gray-400 pr-1">
                       <p className="text-[6px] font-bold bg-green-50 text-green-800 print:bg-gray-100 print:text-black text-center mb-0.5 rounded">ENTRADAS</p>
                       <table className="w-full text-[7px] leading-tight">
@@ -167,7 +163,6 @@ export default function ImprimirLiquidacionesPage() {
                       </table>
                     </div>
 
-                    {/* Tabla Derecha: Gastos (Más angosta) */}
                     <div className="w-1/3">
                       <p className="text-[6px] font-bold bg-red-50 text-red-800 print:bg-gray-100 print:text-black text-center mb-0.5 rounded">DEDUCCIONES</p>
                       <table className="w-full text-[7px] leading-tight">
@@ -191,8 +186,6 @@ export default function ImprimirLiquidacionesPage() {
                 {/* Footer */}
                 <div className="mt-auto pt-1 border-t border-black">
                   <div className="flex items-end justify-between gap-2">
-                    
-                    {/* Importe con Letra */}
                     <div className="flex-1 text-left pr-2">
                       <p className="text-[6px] font-bold uppercase text-gray-500">Importe con letra</p>
                       <p className="text-[7px] font-bold uppercase leading-tight border-b border-black/20 pb-0.5 w-full truncate">
@@ -200,8 +193,6 @@ export default function ImprimirLiquidacionesPage() {
                       </p>
                       <p className="text-[6px] text-gray-400 mt-0.5">Recibí de conformidad el pago neto.</p>
                     </div>
-
-                    {/* Total Final */}
                     <div className="text-right leading-none shrink-0 bg-gray-100 print:bg-transparent px-1 rounded">
                       <p className="text-[6px] font-bold text-gray-500 uppercase">A PAGAR</p>
                       <p className="text-sm font-black">
@@ -210,7 +201,6 @@ export default function ImprimirLiquidacionesPage() {
                     </div>
                   </div>
                 </div>
-
               </div>
             );
           })}
@@ -226,5 +216,14 @@ export default function ImprimirLiquidacionesPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+// 3. EXPORTAMOS POR DEFECTO UN WRAPPER CON SUSPENSE
+export default function ImprimirLiquidacionesPage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center text-green-600">Preparando impresión...</div>}>
+      <ImprimirContent />
+    </Suspense>
   );
 }

@@ -1,11 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { documentId, collection, query, where, getDocs } from "firebase/firestore";
 import { Loader2, Printer, ArrowLeft } from "lucide-react";
 
-// --- UTILIDAD: Convertir Números a Letras (Compacta) ---
+// ... (numeroALetras utility igual que antes)
 const numeroALetras = (amount) => {
   const unidades = ["", "UN ", "DOS ", "TRES ", "CUATRO ", "CINCO ", "SEIS ", "SIETE ", "OCHO ", "NUEVE "];
   const decenas = ["", "DIEZ ", "VEINTE ", "TREINTA ", "CUARENTA ", "CINCUENTA ", "SESENTA ", "SETENTA ", "OCHENTA ", "NOVENTA "];
@@ -45,7 +45,7 @@ const numeroALetras = (amount) => {
   return `${letras}PESOS ${centavos.toString().padStart(2, '0')}/100 M.N.`.trim();
 };
 
-export default function ImprimirLotePage() {
+function ImprimirVentasContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [ventas, setVentas] = useState([]);
@@ -82,20 +82,15 @@ export default function ImprimirLotePage() {
 
   const handlePrint = () => window.print();
 
-  // --- LÓGICA DE DUPLICACIÓN ---
-  // Por cada venta, creamos dos elementos en el array (Original y Copia)
   const ventasImpresion = ventas.flatMap((venta) => [
     { ...venta, _key: `${venta.id}_orig`, _tipo: "ORIGINAL" },
     { ...venta, _key: `${venta.id}_copia`, _tipo: "COPIA" }
   ]);
 
-  // Helper para formatear folio
   const getFolio = (venta) => {
     if (venta.folio) {
-      // Si tiene folio numérico, lo mostramos con ceros a la izquierda (ej. 0045)
       return venta.folio.toString().padStart(4, '0');
     }
-    // Fallback para ventas viejas: usa los primeros 6 caracteres del ID
     return venta.id.slice(0, 6).toUpperCase();
   };
 
@@ -104,7 +99,7 @@ export default function ImprimirLotePage() {
   return (
     <div className="min-h-screen bg-gray-100 p-4 print:p-0 print:bg-white">
       
-      {/* Barra de Herramientas (No Imprimible) */}
+      {/* Toolbar */}
       <div className="max-w-4xl mx-auto mb-6 flex justify-between items-center print:hidden">
         <button onClick={() => router.back()} className="flex items-center text-gray-600 hover:text-green-600">
           <ArrowLeft className="mr-2" size={20} /> Volver
@@ -114,13 +109,9 @@ export default function ImprimirLotePage() {
         </button>
       </div>
 
-      {/* LIENZO DE IMPRESIÓN */}
+      {/* LIENZO */}
       <div className="max-w-[21.59cm] mx-auto bg-white shadow-xl print:shadow-none print:max-w-none">
         
-        {/* GRID AJUSTADO: 
-            - gap-y-8 (approx 2rem / 32px) da buen espacio vertical para cortar/engrapar.
-            - 2 columnas forzadas en impresión para hacer los pares (Original - Copia).
-        */}
         <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4 print:gap-x-8 print:gap-y-8 p-4 print:p-0">
           {ventasImpresion.map((venta) => {
              const day = venta.fechaDate.getDate().toString().padStart(2, '0');
@@ -130,18 +121,16 @@ export default function ImprimirLotePage() {
              return (
               <div 
                 key={venta._key} 
-                // Altura reducida a 8cm para compensar el gap vertical más grande
                 className="relative p-2 border border-gray-300 print:border-black h-[8cm] flex flex-col justify-between rounded-md" 
               >
-                {/* CONTENIDO DE LA NOTA */}
+                {/* CONTENIDO */}
                 <div>
-                  {/* Header Nota */}
+                  {/* Header */}
                   <div className="flex justify-between items-center mb-1 pb-1 border-b border-black">
                     <div>
                       <h2 className="font-black text-sm uppercase tracking-tighter leading-none">CHAYOTES MEZA</h2>
                       <p className="text-[7px] text-gray-600 font-medium">Bodega G-45, Central de Abastos</p>
                     </div>
-                    {/* Fecha Grande y Explícita */}
                     <div className="text-right leading-none flex flex-col items-end">
                       <div className="flex gap-3 text-[6px] font-bold text-gray-500 uppercase tracking-wider mb-0.5">
                         <span>Día</span>
@@ -154,7 +143,7 @@ export default function ImprimirLotePage() {
                     </div>
                   </div>
 
-                  {/* Cliente y Folio */}
+                  {/* Cliente */}
                   <div className="mb-1 flex justify-between items-baseline">
                     <span className="font-bold text-[10px] truncate max-w-[60%]">{venta.cliente_nombre}</span>
                     <div className="text-right">
@@ -165,7 +154,7 @@ export default function ImprimirLotePage() {
                     </div>
                   </div>
 
-                  {/* Tabla Compacta */}
+                  {/* Tabla */}
                   <table className="w-full text-[8px] mb-1">
                     <thead>
                       <tr className="border-b border-black">
@@ -188,11 +177,9 @@ export default function ImprimirLotePage() {
                   </table>
                 </div>
 
-                {/* Footer / Totales / Importe con Letra */}
+                {/* Footer */}
                 <div className="mt-auto">
                   <div className="flex items-end justify-between gap-2">
-                    
-                    {/* Importe con Letra */}
                     <div className="flex-1 text-left pr-2">
                       <p className="text-[6px] font-bold uppercase text-gray-500">Importe con letra</p>
                       <p className="text-[7px] font-bold uppercase leading-tight border-b border-black/20 pb-0.5 w-full truncate">
@@ -202,8 +189,6 @@ export default function ImprimirLotePage() {
                         Pagaré incondicional a la orden de CHAYOTES MEZA.
                       </p>
                     </div>
-
-                    {/* Total */}
                     <div className="text-right leading-none shrink-0">
                       <p className="text-[7px] font-medium">Total</p>
                       <p className="text-base font-black">
@@ -212,7 +197,6 @@ export default function ImprimirLotePage() {
                     </div>
                   </div>
                 </div>
-
               </div>
             );
           })}
@@ -221,23 +205,21 @@ export default function ImprimirLotePage() {
 
       <style jsx global>{`
         @media print {
-          @page {
-            margin: 0.5cm; 
-            size: letter;
-          }
-          body {
-            background: white;
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-          }
-          nav, .fixed, header {
-            display: none !important;
-          }
-          .print\:p-0 {
-            padding: 0 !important;
-          }
+          @page { margin: 0.5cm; size: letter; }
+          body { background: white; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+          nav, .fixed, header { display: none !important; }
+          .print\:p-0 { padding: 0 !important; }
         }
       `}</style>
     </div>
+  );
+}
+
+// EXPORTAMOS WRAPPER
+export default function ImprimirLotePage() {
+  return (
+    <Suspense fallback={<div className="h-screen flex items-center justify-center">Cargando...</div>}>
+      <ImprimirVentasContent />
+    </Suspense>
   );
 }
