@@ -10,24 +10,28 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Chayotex",
   description: "Sistema de gestión para comercialización de chayotes",
-  manifest: "/manifest.json", // Vinculamos el archivo que acabamos de crear
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "default", // iOS intenta adaptarse
     title: "Chayotex",
   },
   formatDetection: {
-    telephone: false, // Evita que los números se vuelvan links azules feos en iOS
+    telephone: false,
   },
 };
 
-// VIEWPORT (Zoom y Escala)
+// VIEWPORT ADAPTATIVO
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // Se siente más como app nativa al bloquear el zoom
-  themeColor: "#16a34a", // Color de la barra de estado en Android
+  userScalable: false,
+  // Aquí definimos el color dinámico de la barra de estado
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" }, // Blanco para modo claro
+    { media: "(prefers-color-scheme: dark)", color: "#111827" },  // Gris oscuro (gray-900) para modo oscuro
+  ],
 };
 
 export default function RootLayout({ children }) {
