@@ -110,12 +110,13 @@ export default function LiquidacionesPage() {
               </button>
             ) : (
               // Botón de selección múltiple
-              <button 
+               <button 
                 onClick={activarModoSeleccion} 
-                className="text-green-600 bg-green-50 dark:bg-green-900/20 p-2 rounded-xl"
-                title="Seleccionar varias"
+                className="flex items-center gap-2 text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-3 py-2 rounded-xl text-sm font-bold transition-colors border border-green-200 dark:border-green-800/50"
+                title="Seleccionar para imprimir o cobrar"
               >
-                <CheckSquare size={20} />
+                <CheckSquare size={18} />
+                <span>Seleccionar</span>
               </button>
             )}
           </div>

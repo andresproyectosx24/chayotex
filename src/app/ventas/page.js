@@ -24,23 +24,19 @@ import {
   X,
   DollarSign, 
   Loader2,
-  Search // Importamos icono de búsqueda
+  Search 
 } from "lucide-react";
 
 export default function VentasPage() {
   const [ventas, setVentas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("todos");
-  
-  // --- NUEVO: ESTADO DE BÚSQUEDA ---
   const [busqueda, setBusqueda] = useState("");
-
   const [modoSeleccion, setModoSeleccion] = useState(false);
   const [seleccionados, setSeleccionados] = useState([]); 
   const [procesandoPago, setProcesandoPago] = useState(false); 
   const router = useRouter();
 
-  // Helper de formato fechas (lo movemos arriba para usarlo en el filtro)
   const formatDate = (date) => new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
   const getFolio = (venta) => venta.folio ? venta.folio.toString().padStart(4, '0') : "";
 
@@ -68,21 +64,15 @@ export default function VentasPage() {
     return () => unsubscribe();
   }, [filtro]);
 
-  // --- NUEVO: LÓGICA DE FILTRADO POR BÚSQUEDA ---
   const ventasFiltradas = ventas.filter((venta) => {
-    if (!busqueda) return true; // Si no hay búsqueda, mostrar todo
-    
+    if (!busqueda) return true;
     const term = busqueda.toLowerCase();
-    
-    // Campos donde buscaremos
     const cliente = venta.cliente_nombre?.toLowerCase() || "";
-    const folio = getFolio(venta); // Buscamos por el número "0045"
-    const fecha = formatDate(venta.fechaDate).toLowerCase(); // Buscamos por "12 oct"
-
+    const folio = getFolio(venta); 
+    const fecha = formatDate(venta.fechaDate).toLowerCase();
     return cliente.includes(term) || folio.includes(term) || fecha.includes(term);
   });
 
-  // Manejo de Selección
   const toggleSeleccion = (id) => {
     if (seleccionados.includes(id)) {
       setSeleccionados(seleccionados.filter(item => item !== id));
@@ -109,13 +99,11 @@ export default function VentasPage() {
 
   const handleMarcarPagado = async () => {
     if (seleccionados.length === 0) return;
-    
     if (!confirm(`¿Confirmas que recibiste el pago de las ${seleccionados.length} notas seleccionadas?`)) return;
 
     setProcesandoPago(true);
     try {
       const batch = writeBatch(db);
-
       seleccionados.forEach((id) => {
         const ventaRef = doc(db, "ventas", id);
         batch.update(ventaRef, {
@@ -125,7 +113,6 @@ export default function VentasPage() {
           metodo_cobro: "Caja" 
         });
       });
-
       await batch.commit();
       cancelarSeleccion();
     } catch (error) {
@@ -144,7 +131,6 @@ export default function VentasPage() {
       {/* Header Fijo */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10 px-4 pt-4 pb-2 space-y-3">
         
-        {/* Fila 1: Título y Acciones */}
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-800 dark:text-white">
             {modoSeleccion ? `${seleccionados.length} seleccionadas` : "Notas de Venta"}
@@ -152,22 +138,26 @@ export default function VentasPage() {
           
           <div className="flex gap-2">
             {modoSeleccion ? (
-              <button onClick={cancelarSeleccion} className="text-gray-500 bg-gray-100 dark:bg-gray-800 p-2 rounded-xl">
-                <X size={20} />
+              <button 
+                onClick={cancelarSeleccion} 
+                className="flex items-center gap-2 text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+              >
+                <X size={18} />
+                <span>Cancelar</span>
               </button>
             ) : (
               <button 
                 onClick={activarModoSeleccion} 
-                className="text-green-600 bg-green-50 dark:bg-green-900/20 p-2 rounded-xl"
-                title="Seleccionar varias"
+                className="flex items-center gap-2 text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-3 py-2 rounded-xl text-sm font-bold transition-colors border border-green-200 dark:border-green-800/50"
+                title="Seleccionar para imprimir o cobrar"
               >
-                <CheckSquare size={20} />
+                <CheckSquare size={18} />
+                <span>Seleccionar</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Fila 2: Buscador (Solo visible si no estamos seleccionando para no saturar) */}
         {!modoSeleccion && (
           <div className="relative">
             <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
@@ -189,7 +179,6 @@ export default function VentasPage() {
           </div>
         )}
 
-        {/* Fila 3: Filtros (Todos/Por Cobrar) */}
         {!modoSeleccion && (
           <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
             <button onClick={() => setFiltro("todos")} className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${filtro === "todos" ? "bg-white dark:bg-gray-700 text-gray-800 dark:text-white shadow-sm" : "text-gray-500 dark:text-gray-400"}`}>
@@ -265,14 +254,19 @@ export default function VentasPage() {
         )}
       </main>
 
-      {/* --- BARRA DE ACCIONES FLOTANTE --- */}
+      {/* --- Acciones Flotantes Mejoradas --- */}
+      {/* md:left-auto: Evita que se estire en escritorio.
+          md:w-auto: Ancho automático según contenido.
+          transition-all + active:scale: Efecto de pulsación.
+          disabled:translate-y-20: Se esconden hacia abajo si no están activos (efecto "move").
+      */}
       {modoSeleccion ? (
-        <div className="fixed bottom-20 right-4 left-4 flex gap-3 z-40">
+        <div className="fixed bottom-20 right-4 left-4 md:left-auto flex gap-3 z-40">
           
           <button 
             onClick={irAImprimir}
             disabled={seleccionados.length === 0 || procesandoPago}
-            className="flex-1 bg-gray-800 dark:bg-gray-700 text-white font-bold p-4 rounded-xl shadow-xl flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
+            className="flex-1 md:flex-none md:w-48 bg-gray-900 hover:bg-black dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-bold p-4 rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:translate-y-20 hover:shadow-2xl hover:-translate-y-1"
           >
             <Printer size={20} />
             <span className="text-sm">Imprimir ({seleccionados.length})</span>
@@ -281,7 +275,7 @@ export default function VentasPage() {
           <button 
             onClick={handleMarcarPagado}
             disabled={seleccionados.length === 0 || procesandoPago}
-            className="flex-1 bg-green-600 text-white font-bold p-4 rounded-xl shadow-xl flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 transition-all"
+            className="flex-1 md:flex-none md:w-48 bg-green-600 hover:bg-green-500 text-white font-bold p-4 rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:translate-y-20 hover:shadow-2xl hover:-translate-y-1"
           >
             {procesandoPago ? <Loader2 className="animate-spin" size={20}/> : <DollarSign size={20} />}
             <span className="text-sm">Marcar Pagado</span>
@@ -289,7 +283,7 @@ export default function VentasPage() {
         </div>
       ) : (
         <Link href="/ventas/nueva">
-          <button className="fixed bottom-20 right-4 bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition-transform active:scale-95 z-40">
+          <button className="fixed bottom-20 right-4 bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-lg transition-transform active:scale-95 z-40 hover:shadow-xl hover:-translate-y-1 duration-300">
             <Plus size={24} />
           </button>
         </Link>
